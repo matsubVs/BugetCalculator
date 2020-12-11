@@ -24,6 +24,10 @@ const depositBank = document.querySelector('.deposit-bank');
 const depositAmount = document.querySelector('.deposit-amount');
 const depositPercent = document.querySelector('.deposit-percent');
 
+const resultInputs = [budgetMonthValue, budgetDayValue, expensesMonthValue, 
+    additionalIncomeValue, additionalExpensesValue, incomePeriodValue,
+    targetMonthValue]
+
 let salaryElement = document.querySelector('.salary-amount');
 
 let calcPeriod = document.querySelector('.salary-amount');
@@ -78,9 +82,10 @@ class AppData {
         this.getExpensesMonth();
         this.getInfoDeposit();
         this.getBudget();    
-
-        this.showResult();
     
+        this.showResult();
+
+        this.saveStorage();
         this.disableFields();
     }
     
@@ -147,6 +152,78 @@ class AppData {
         this.expensesMonth = 0;
 
         depositCheckBox.checked = false;
+
+        this.resetStorage();
+    }
+
+    saveStorage() {
+        resultInputs.forEach(item => {
+            localStorage.setItem(item.classList[1], item.value);
+            document.cookie = `${item.classList[1].trim()}=${item.value}`
+        })
+
+        document.cookie = 'isLoad=true'
+
+        console.log(localStorage);
+        console.log(document.cookie);
+
+    }
+
+    renderStorage() {
+        let checkFlag = true;
+        if (localStorage.length != 0) {
+            resultInputs.forEach(item => {
+            let storageValue = localStorage.getItem(item.classList[1])
+            item.value = storageValue;
+            if (!this.checkStorage()) {
+                this.resetStorage();
+                this.reset();
+                checkFlag = false;
+                return;
+            }
+        })
+        if (checkFlag) this.disableFields();
+        }
+    }
+
+    resetStorage() {
+        localStorage.clear();
+        let cookies = document.cookie.split(";");
+
+        for (let i = 0; i < cookies.length; i++) {
+            let cookie = cookies[i];
+            let eqPos = cookie.indexOf("=");
+            let name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+            document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        }
+    }
+
+    checkStorage() {
+        let cookies = document.cookie.split(";");
+        for(let i = 0; i < cookies.length; i++) {
+            cookies[i] = cookies[i].split("=");
+        };
+        cookies = cookies.splice(0, cookies.length - 1);
+        cookies.forEach(item => item[0] = item[0].trim())
+        
+        let localStorageData = []
+        for(let key = 0; key < Object.keys(localStorage).length; key++) {
+            localStorageData.push([Object.keys(localStorage)[key], localStorage.getItem(Object.keys(localStorage)[key])])
+        }
+
+        localStorageData.sort();
+        cookies.sort();
+        let flag = true;
+        for (let i = 0; i < cookies.length; i++) {
+            if (cookies[i][0] == localStorageData[i][0]) {
+                continue;
+            } else {
+                flag = false;
+                break;
+            }
+        }
+
+        return flag;
     }
     
     disableFields() {
@@ -370,3 +447,4 @@ class AppData {
 
 const appData = new AppData();
 appData.eventListeners();
+appData.renderStorage();
